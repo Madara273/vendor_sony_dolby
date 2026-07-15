@@ -25,11 +25,12 @@ import androidx.navigation.NavController
 import org.lunaris.dolby.R
 import org.lunaris.dolby.domain.models.DolbyUiState
 import org.lunaris.dolby.ui.components.*
+import org.lunaris.dolby.ui.viewmodel.DolbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ModernDolbySettingsScreen(
-    viewModel: org.lunaris.dolby.ui.viewmodel.DolbyViewModel,
+    viewModel: DolbyViewModel,
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -101,6 +102,7 @@ fun ModernDolbySettingsScreen(
                 ModernDolbySettingsContent(
                     state = state,
                     viewModel = viewModel,
+                    navController = navController,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -130,49 +132,9 @@ fun ModernDolbySettingsScreen(
                 }
             }
         }
-            
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.95f)
-                            )
-                        )
-                    )
-            )
-            
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(
-                        start = cutoutInsets.calculateStartPadding(layoutDirection),
-                        end = cutoutInsets.calculateEndPadding(layoutDirection),
-                        bottom = paddingValues.calculateBottomPadding()
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                FloatingNavToolbar(
-                    currentRoute = currentRoute?.destination?.route ?: "settings",
-                    onNavigate = { route ->
-                        if (currentRoute?.destination?.route != route) {
-                            navController.navigate(route) {
-                                popUpTo("settings") { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    }
-                )
-            }
         }
-    }
 
+    }
     if (showResetDialog) {
         ModernConfirmDialog(
             title = stringResource(R.string.dolby_reset_all),
@@ -196,7 +158,8 @@ fun ModernDolbySettingsScreen(
 @Composable
 private fun ModernDolbySettingsContent(
     state: DolbyUiState.Success,
-    viewModel: org.lunaris.dolby.ui.viewmodel.DolbyViewModel,
+    viewModel: DolbyViewModel,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -209,6 +172,10 @@ private fun ModernDolbySettingsContent(
                 enabled = state.settings.enabled,
                 onEnabledChange = { viewModel.setDolbyEnabled(it) }
             )
+        }
+
+        item {
+            NotificationListenerPermissionCard()
         }
 
         item {
@@ -239,6 +206,18 @@ private fun ModernDolbySettingsContent(
                         onPresetChange = { viewModel.setIeqPreset(it) }
                     )
                 }
+            }
+        }
+
+        item {
+            AnimatedVisibility(
+                visible = state.settings.enabled,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                AppProfileSettingsCard(
+                    onManageClick = { navController.navigate("app_profiles") }
+                )
             }
         }
         
